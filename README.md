@@ -5,8 +5,30 @@ An extension of Laravel Sidecar project to be able to use it locally with Docker
 
 ## Getting started
 
-```
+```bash
 composer require open-southeners/sidecar-local
+```
+
+### Setting up
+
+Publish config file with the following command:
+
+```bash
+php artisan vendor:publish --provider="OpenSoutheners\\SidecarLocal\\ServiceProvider"
+```
+
+**Then don't forget to set your `sidecar.env` config option to `local` and the `sidecar.functions` with the ones you want to test locally to make this work.**
+
+Run the following command to publish `docker-compose.yml` file into `resources/sidecar` folder with `--run` option to run Docker with all services locally:
+
+```bash
+php artisan sidecar:local --run
+```
+
+To **stop the services** you can just run the same but with `--stop` option:
+
+```bash
+php artisan sidecar:local --stop
 ```
 
 ## Partners
