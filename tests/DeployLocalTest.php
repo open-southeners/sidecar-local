@@ -31,6 +31,10 @@ class DeployLocalTest extends TestCase
             "traefik:",
             "container_name: sidecar_local",
             "image: 'traefik:v2.4'",
+            "deploy:",
+            "restart_policy:",
+            "condition: unless-stopped",
+            "max_attempts: 3",
             "ports:",
             "- '6000:80'",
             "- '8080:8080'",
@@ -44,6 +48,10 @@ class DeployLocalTest extends TestCase
             "test_function:",
             "container_name: TestFunction",
             "image: 'amazon/aws-lambda-nodejs:16'",
+            "deploy:",
+            "restart_policy:",
+            "condition: on-failure",
+            "max_attempts: 3",
             "command: index.handler",
             "volumes:",
             "- './TestFunction:/var/task'",
@@ -72,5 +80,22 @@ class DeployLocalTest extends TestCase
         $command->run();
 
         $process->assertRan('docker compose up -d');
+    }
+
+    public function testDeployLocalWithStopOptionTriggersASubProcessWithoutCreatingDockerComposeFile()
+    {
+        $process = Process::fake();
+
+        $command = $this->artisan('sidecar:local', ['--stop' => true]);
+
+        $command->doesntExpectOutput('Docker compose file created successfully with all functions as services.');
+
+        $command->expectsOutput('Docker functions services stopped successfully.');
+
+        $command->assertExitCode(0);
+
+        $command->run();
+
+        $process->assertRan('docker compose stop');
     }
 }

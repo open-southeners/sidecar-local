@@ -50,6 +50,10 @@ class DeployLocal extends Command
 
         $fullPath = base_path($this->option('path'));
 
+        if ($this->option('stop')) {
+            return $this->stopDocker($fullPath);
+        }
+
         if (! $this->writeComposeFile($fullPath, $this->buildYamlServices())) {
             $this->error('Error writing the docker-compose.yml file.');
 
@@ -87,6 +91,12 @@ class DeployLocal extends Command
             $services[$serviceName] = [
                 'container_name' => $functionClassName,
                 'image' => $awsLambdaImage,
+                'deploy' => [
+                    'restart_policy' => [
+                        'condition' => 'on-failure',
+                        'max_attempts' => 3,
+                    ],
+                ],
                 'command' => $lambdaFunction->handler(),
                 'volumes' => ["./{$functionClassName}:/var/task"],
                 'labels' => [
@@ -114,6 +124,12 @@ class DeployLocal extends Command
                 'traefik' => [
                     'container_name' => 'sidecar_local',
                     'image' => 'traefik:v2.4',
+                    'deploy' => [
+                        'restart_policy' => [
+                            'condition' => 'unless-stopped',
+                            'max_attempts' => 3
+                        ],
+                    ],
                     'ports' => [
                         config('sidecar-local.port', 6000).":80",
                         "8080:8080",
@@ -151,6 +167,24 @@ class DeployLocal extends Command
     }
 
     /**
+     * Stop running functions services in Docker.
+     */
+    protected function stopDocker(string $workdir): int
+    {
+        $result = Process::path($workdir)->run('docker compose stop');
+
+        if ($result->failed()) {
+            $this->error($result->errorOutput());
+
+            return $result->exitCode();
+        }
+
+        $this->info('Docker functions services stopped successfully.');
+
+        return 0;
+    }
+
+    /**
      * Get the console command options.
      *
      * @return array
@@ -158,9 +192,9 @@ class DeployLocal extends Command
     protected function getOptions()
     {
         return [
-            ['run', null, InputOption::VALUE_OPTIONAL, 'Run created services in Docker.'],
+            ['run', null, InputOption::VALUE_OPTIONAL, 'Run created services in Docker'],
             ['path', 'o', InputOption::VALUE_OPTIONAL, 'Relative path to the root where to write resulted docker-compose.yml file', 'resources/sidecar'],
-            ['stop', null, InputOption::VALUE_OPTIONAL, 'Stop any Docker services previously created using this command on the path'],
+            ['stop', null, InputOption::VALUE_OPTIONAL, 'Stop all Docker services previously created using this command on the path'],
         ];
     }
 }
