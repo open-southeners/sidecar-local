@@ -2,6 +2,7 @@
 
 namespace OpenSoutheners\SidecarLocal\Commands;
 
+use Hammerstone\Sidecar\Clients\LambdaClient;
 use Hammerstone\Sidecar\Sidecar;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
+use ZipArchive;
 
 class DeployLocal extends Command
 {
@@ -54,7 +56,7 @@ class DeployLocal extends Command
             return $this->stopDocker($fullPath);
         }
 
-        if (! $this->writeComposeFile($fullPath, $this->buildYamlServices())) {
+        if (! $this->writeComposeFile($fullPath, $this->buildYamlServices($fullPath))) {
             $this->error('Error writing the docker-compose.yml file.');
 
             return 3;
@@ -72,14 +74,23 @@ class DeployLocal extends Command
     /**
      * Build function services array to be written by Yaml dumper.
      */
-    protected function buildYamlServices(): array
+    protected function buildYamlServices(string $basePath): array
     {
         /** @var array<\Hammerstone\Sidecar\LambdaFunction> $sidecarFunctions */
         $sidecarFunctions = Sidecar::instantiatedFunctions();
         $services = [];
 
         foreach ($sidecarFunctions as $lambdaFunction) {
+            $lambdaFunction->beforeDeployment();
+
             $functionClassName = class_basename(get_class($lambdaFunction));
+            $functionLayers = $lambdaFunction->layers();
+            $functionLayersPath = null;
+
+            if (count($functionLayers) > 0) {
+                $functionLayersPath = $this->grabFunctionRequiredLayers($basePath, $functionClassName, $functionLayers);
+            }
+
             $functionAwsCallName = $lambdaFunction->nameWithPrefix();
             $serviceName = Str::snake(Str::remove('-', $functionClassName));
 
@@ -108,9 +119,68 @@ class DeployLocal extends Command
                     "traefik.http.services.{$serviceName}.loadbalancer.server.port=8080",
                 ],
             ];
+
+            if ($functionLayersPath) {
+                $services[$serviceName]['volumes'][] = $functionLayersPath;
+            }
         }
 
         return $services;
+    }
+
+    /**
+     * Get function required Lambda layers from AWS cloud.
+     */
+    protected function grabFunctionRequiredLayers(string $basePath, string $functionClass, array $arns): string
+    {
+        // We need to set environment any value rather than "local"
+        // to be able to grab layers from AWS cloud.
+        config(['sidecar.env' => 'deploying']);
+
+        $zipArchive = new ZipArchive();
+
+        $functionLayerDirectory = "{$basePath}/layers/{$functionClass}";
+        $this->filesystem->ensureDirectoryExists($functionLayerDirectory);
+
+        $progressBar = $this->getOutput()->createProgressBar(count($arns));
+        $progressBar->start();
+
+        foreach ($arns as $arn) {
+            $layerDirectoryName = Str::of($arn)->afterLast(':layer:')->replaceLast(':', '/');
+            $layerZipFileName = $layerDirectoryName->afterLast('/')->append('.zip')->value();
+            $layerDirectoryName = $layerDirectoryName->value();
+
+            $layerTmpDirectoryPath = storage_path("tmp/layers/{$layerDirectoryName}");
+            $this->filesystem->ensureDirectoryExists($layerTmpDirectoryPath);
+            $layerTmpFilePath = "{$layerTmpDirectoryPath}/{$layerZipFileName}";
+
+            if (! $this->filesystem->exists($layerTmpFilePath)) {
+                $layerData = app(LambdaClient::class)->getLayerVersionByArn(['Arn' => $arn])->toArray();
+        
+                $layerLocation = data_get($layerData, 'Content.Location');
+    
+                if (! $layerLocation || ! $this->filesystem->copy($layerLocation, $layerTmpFilePath)) {
+                    $this->warn("Cannot download layer for function '{$functionClass}'.");
+    
+                    continue;
+                }
+            }
+
+            $zipArchive->open($layerTmpFilePath);
+            $zipArchive->extractTo($functionLayerDirectory);
+            $zipArchive->close();
+
+            $progressBar->advance();
+        }
+
+        $progressBar->clear();
+
+        config(['sidecar.env' => 'local']);
+
+        return Str::of($functionLayerDirectory)
+            ->replaceFirst($basePath, '.')
+            ->append(':/opt:ro')
+            ->value();
     }
 
     /**
