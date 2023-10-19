@@ -79,7 +79,7 @@ class DeployLocal extends Command
             $functionAwsCallName = $lambdaFunction->nameWithPrefix();
             $serviceName = Str::snake(Str::remove('-', $functionClassName));
 
-            $image = Str::replaceEnd('.x', '', $lambdaFunction->runtime());
+            $image = Str::replaceLast('.x', '', $lambdaFunction->runtime());
             $imageRuntime = preg_replace('/\d|/', '', $image);
             $imageRuntimeTag = filter_var($image, FILTER_SANITIZE_NUMBER_INT);
             $awsLambdaImage = "amazon/aws-lambda-{$imageRuntime}:{$imageRuntimeTag}";
@@ -108,7 +108,6 @@ class DeployLocal extends Command
      */
     protected function writeComposeFile(string $basePath, array $services): bool
     {
-        print_r("{$basePath}/docker-compose.yml");
         return (bool) $this->filesystem->put("{$basePath}/docker-compose.yml", Yaml::dump([
             'version' => '3',
             'services' => array_merge([
