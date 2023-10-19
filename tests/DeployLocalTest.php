@@ -34,7 +34,6 @@ class DeployLocalTest extends TestCase
             "deploy:",
             "restart_policy:",
             "condition: unless-stopped",
-            "max_attempts: 3",
             "ports:",
             "- '6000:80'",
             "- '8080:8080'",

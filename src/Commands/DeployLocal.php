@@ -127,7 +127,6 @@ class DeployLocal extends Command
                     'deploy' => [
                         'restart_policy' => [
                             'condition' => 'unless-stopped',
-                            'max_attempts' => 3
                         ],
                     ],
                     'ports' => [
