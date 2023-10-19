@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2023-10-19
+
+### Added
+
+- Support for Lambda layers, locally downloaded and merged into `resources/layers/FunctionName`
+- Support for [`beforeDeployment` hook function](https://hammerstone.dev/sidecar/docs/main/functions/hooks#example-before-deployment)
+
 ## [1.0.2] - 2023-10-19
 
 ### Fixed
