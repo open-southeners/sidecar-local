@@ -3,16 +3,22 @@
 namespace OpenSoutheners\SidecarLocal\Tests;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Process;
 use Orchestra\Testbench\Concerns\InteractsWithPublishedFiles;
 
 class DeployLocalTest extends TestCase
 {
     use InteractsWithPublishedFiles;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(Filesystem::class)->ensureDirectoryExists(resource_path('sidecar'));
+    }
+
     public function testDeployLocalGeneratesDockerComposeYamlFile()
     {
-        app(Filesystem::class)->ensureDirectoryExists(resource_path('sidecar'));
-
         $command = $this->artisan('sidecar:local');
 
         $command->expectsOutput('Docker compose file created successfully with all functions as services.');
@@ -49,5 +55,22 @@ class DeployLocalTest extends TestCase
             "- traefik.http.routers.test_function.middlewares=test_function-replacepath",
             "- traefik.http.services.test_function.loadbalancer.server.port=8080",
         ], 'resources/sidecar/docker-compose.yml');
+    }
+
+    public function testDeployLocalWithRunOptionTriggersASubProcess()
+    {
+        $process = Process::fake();
+
+        $command = $this->artisan('sidecar:local', ['--run' => true]);
+
+        $command->expectsOutput('Docker compose file created successfully with all functions as services.');
+        
+        $command->expectsOutput('Docker functions services running in the background.');
+
+        $command->assertExitCode(0);
+
+        $command->run();
+
+        $process->assertRan('docker compose up -d');
     }
 }

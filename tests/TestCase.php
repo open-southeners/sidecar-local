@@ -2,6 +2,7 @@
 
 namespace OpenSoutheners\SidecarLocal\Tests;
 
+use Hammerstone\Sidecar\Providers\SidecarServiceProvider;
 use OpenSoutheners\SidecarLocal\Tests\Fixtures\TestFunction;
 use Orchestra\Testbench\TestCase as Orchestra;
 use OpenSoutheners\SidecarLocal\ServiceProvider;
@@ -17,6 +18,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
+            SidecarServiceProvider::class,
             ServiceProvider::class,
         ];
     }
@@ -29,12 +31,10 @@ abstract class TestCase extends Orchestra
      */
     protected function defineEnvironment($app)
     {
-        $app['config']->set('sidecar', [
-            'env' => 'local',
-            'functions' => [
-                TestFunction::class,
-            ],
-        ]);
+        $app['config']->set('sidecar', include_once __DIR__.'/../vendor/hammerstone/sidecar/config/sidecar.php');
+
+        $app['config']->set('sidecar.functions', [TestFunction::class]);
+        $app['config']->set('sidecar.env', 'local');
 
         $app['config']->set('sidecar-local', include_once __DIR__.'/../config/sidecar-local.php');
     }
