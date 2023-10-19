@@ -192,9 +192,9 @@ class DeployLocal extends Command
     protected function getOptions()
     {
         return [
-            ['run', null, InputOption::VALUE_OPTIONAL, 'Run created services in Docker'],
+            ['run', null, InputOption::VALUE_NONE, 'Run created services in Docker'],
             ['path', 'o', InputOption::VALUE_OPTIONAL, 'Relative path to the root where to write resulted docker-compose.yml file', 'resources/sidecar'],
-            ['stop', null, InputOption::VALUE_OPTIONAL, 'Stop all Docker services previously created using this command on the path'],
+            ['stop', null, InputOption::VALUE_NONE, 'Stop all Docker services previously created using this command on the path'],
         ];
     }
 }
