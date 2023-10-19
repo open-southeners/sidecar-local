@@ -1,6 +1,6 @@
 {
-    "name": "open-southeners/packagist_package_here",
-    "description": "and_description_here",
+    "name": "open-southeners/sidecar-local",
+    "description": "An extension of Laravel Sidecar project to be able to use it locally with Docker",
     "license": "MIT",
     "keywords": [
         "open-southeners"
@@ -19,7 +19,11 @@
         }
     ],
     "require": {
-        "php": "^8.0 || ^8.1 || ^8.2"
+        "php": "^8.0 || ^8.1 || ^8.2",
+        "illuminate/console": "^9.0 || ^10.0",
+        "illuminate/filesystem": "^9.0 || ^10.0",
+        "illuminate/support": "^9.0 || ^10.0",
+        "hammerstone/sidecar": "^0.4"
     },
     "require-dev": {
         "nunomaduro/larastan": "^2.0",
@@ -30,12 +34,12 @@
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
-            "OpenSoutheners\\PhpPackage\\": "src"
+            "OpenSoutheners\\SidecarLocal\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "OpenSoutheners\\PhpPackage\\Tests\\": "tests"
+            "OpenSoutheners\\SidecarLocal\\Tests\\": "tests"
         }
     },
     "config": {
@@ -44,7 +48,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "OpenSoutheners\\PhpPackage\\ServiceProvider"
+                "OpenSoutheners\\SidecarLocal\\ServiceProvider"
             ]
         }
     }

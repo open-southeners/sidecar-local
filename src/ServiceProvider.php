@@ -1,8 +1,10 @@
 <?php
 
-namespace OpenSoutheners\PhpPackage;
+namespace OpenSoutheners\SidecarLocal;
 
+use Hammerstone\Sidecar\Contracts\AwsClientConfiguration;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use OpenSoutheners\SidecarLocal\Commands\DeployLocal;
 
 class ServiceProvider extends BaseServiceProvider
 {
@@ -13,7 +15,13 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function boot()
     {
-        // 
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/sidecar-local.php' => config_path('sidecar-local.php'),
+            ], 'config');
+
+            $this->commands([DeployLocal::class]);
+        }
     }
 
     /**
@@ -23,6 +31,8 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function register()
     {
-        // 
+        if (config('sidecar.env') === 'local') {
+            $this->app->bind(AwsClientConfiguration::class, AwsLocalClientConfiguration::class);
+        }
     }
 }

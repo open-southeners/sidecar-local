@@ -1,9 +1,10 @@
 <?php
 
-namespace OpenSoutheners\PhpPackage\Tests;
+namespace OpenSoutheners\SidecarLocal\Tests;
 
+use OpenSoutheners\SidecarLocal\Tests\Fixtures\TestFunction;
 use Orchestra\Testbench\TestCase as Orchestra;
-use OpenSoutheners\PhpPackage\ServiceProvider;
+use OpenSoutheners\SidecarLocal\ServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -18,5 +19,23 @@ abstract class TestCase extends Orchestra
         return [
             ServiceProvider::class,
         ];
+    }
+
+    /**
+     * Define environment setup.
+     *
+     * @param  \Illuminate\Foundation\Application  $app
+     * @return void
+     */
+    protected function defineEnvironment($app)
+    {
+        $app['config']->set('sidecar', [
+            'env' => 'local',
+            'functions' => [
+                TestFunction::class,
+            ],
+        ]);
+
+        $app['config']->set('sidecar-local', include_once __DIR__.'/../config/sidecar-local.php');
     }
 }

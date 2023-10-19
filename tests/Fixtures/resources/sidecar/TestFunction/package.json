@@ -1,0 +1,19 @@
+{
+    "name": "@open-southeners/test-function",
+    "private": true,
+    "main": "index.js",
+    "source": "src/index.ts",
+    "scripts": {
+        "build": "yarn bundle --source-map",
+        "bundle": "microbundle --target node --sourcemap false -f cjs",
+        "watch": "yarn bundle --watch"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.86",
+        "@types/node": "^16.11.12",
+        "esm": "^3.2.25",
+        "microbundle": "^0.15.0",
+        "ts-node": "^10.8.1",
+        "typescript": "4.6.*"
+    }
+}
