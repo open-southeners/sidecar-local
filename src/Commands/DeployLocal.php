@@ -2,15 +2,15 @@
 
 namespace OpenSoutheners\SidecarLocal\Commands;
 
-use Hammerstone\Sidecar\Clients\LambdaClient;
+use Hammerstone\Sidecar\LambdaFunction;
 use Hammerstone\Sidecar\Sidecar;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use OpenSoutheners\SidecarLocal\SidecarLayers;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Yaml\Yaml;
-use ZipArchive;
 
 class DeployLocal extends Command
 {
@@ -88,7 +88,7 @@ class DeployLocal extends Command
             $functionLayersPath = null;
 
             if (count($functionLayers) > 0) {
-                $functionLayersPath = $this->grabFunctionRequiredLayers($basePath, $functionClassName, $functionLayers);
+                $functionLayersPath = $this->grabFunctionRequiredLayers($lambdaFunction, $functionLayers);
             }
 
             $functionAwsCallName = $lambdaFunction->nameWithPrefix();
@@ -97,7 +97,8 @@ class DeployLocal extends Command
             $image = Str::replaceLast('.x', '', $lambdaFunction->runtime());
             $imageRuntime = preg_replace('/\d|/', '', $image);
             $imageRuntimeTag = filter_var($image, FILTER_SANITIZE_NUMBER_INT);
-            $awsLambdaImage = "amazon/aws-lambda-{$imageRuntime}:{$imageRuntimeTag}";
+            $awsLambdaImage = config('sidecar-local.registry', 'public.ecr.aws/lambda');
+            $awsLambdaImage .= "/{$imageRuntime}:{$imageRuntimeTag}-{$lambdaFunction->architecture()}";
 
             $services[$serviceName] = [
                 'container_name' => $functionClassName,
@@ -111,7 +112,7 @@ class DeployLocal extends Command
                 'command' => $lambdaFunction->handler(),
                 'volumes' => ["./{$functionClassName}:/var/task"],
                 'labels' => [
-                    "traefik.enable=true",
+                    'traefik.enable=true',
                     "traefik.http.routers.{$serviceName}.entrypoints=web",
                     "traefik.http.routers.{$serviceName}.rule=Host(`localhost`) && Path(`/2015-03-31/functions/{$functionAwsCallName}:active/invocations`)",
                     "traefik.http.middlewares.{$serviceName}-replacepath.replacepath.path=/2015-03-31/functions/function/invocations",
@@ -131,56 +132,11 @@ class DeployLocal extends Command
     /**
      * Get function required Lambda layers from AWS cloud.
      */
-    protected function grabFunctionRequiredLayers(string $basePath, string $functionClass, array $arns): string
+    protected function grabFunctionRequiredLayers(LambdaFunction $function, array $arns): string
     {
-        // We need to set environment any value rather than "local"
-        // to be able to grab layers from AWS cloud.
-        config(['sidecar.env' => 'deploying']);
-
-        $zipArchive = new ZipArchive();
-
-        $functionLayerDirectory = "{$basePath}/layers/{$functionClass}";
-        $this->filesystem->ensureDirectoryExists($functionLayerDirectory);
-
         $progressBar = $this->getOutput()->createProgressBar(count($arns));
-        $progressBar->start();
 
-        foreach ($arns as $arn) {
-            $layerDirectoryName = Str::of($arn)->afterLast(':layer:')->replaceLast(':', '/');
-            $layerZipFileName = $layerDirectoryName->afterLast('/')->append('.zip')->value();
-            $layerDirectoryName = $layerDirectoryName->value();
-
-            $layerTmpDirectoryPath = storage_path("tmp/layers/{$layerDirectoryName}");
-            $this->filesystem->ensureDirectoryExists($layerTmpDirectoryPath);
-            $layerTmpFilePath = "{$layerTmpDirectoryPath}/{$layerZipFileName}";
-
-            if (! $this->filesystem->exists($layerTmpFilePath)) {
-                $layerData = app(LambdaClient::class)->getLayerVersionByArn(['Arn' => $arn])->toArray();
-        
-                $layerLocation = data_get($layerData, 'Content.Location');
-    
-                if (! $layerLocation || ! $this->filesystem->copy($layerLocation, $layerTmpFilePath)) {
-                    $this->warn("Cannot download layer for function '{$functionClass}'.");
-    
-                    continue;
-                }
-            }
-
-            $zipArchive->open($layerTmpFilePath);
-            $zipArchive->extractTo($functionLayerDirectory);
-            $zipArchive->close();
-
-            $progressBar->advance();
-        }
-
-        $progressBar->clear();
-
-        config(['sidecar.env' => 'local']);
-
-        return Str::of($functionLayerDirectory)
-            ->replaceFirst($basePath, '.')
-            ->append(':/opt:ro')
-            ->value();
+        return app(SidecarLayers::class)->fetch($function, $arns, $progressBar);
     }
 
     /**
@@ -200,17 +156,17 @@ class DeployLocal extends Command
                         ],
                     ],
                     'ports' => [
-                        config('sidecar-local.port', 6000).":80",
-                        "8080:8080",
+                        config('sidecar-local.port', 6000).':80',
+                        '8080:8080',
                     ],
                     'command' => [
-                        "--api.insecure=true",
-                        "--providers.docker=true",
-                        "--providers.docker.exposedbydefault=false",
-                        "--entryPoints.web.address=:80",
+                        '--api.insecure=true',
+                        '--providers.docker=true',
+                        '--providers.docker.exposedbydefault=false',
+                        '--entryPoints.web.address=:80',
                     ],
                     'volumes' => [
-                        "/var/run/docker.sock:/var/run/docker.sock",
+                        '/var/run/docker.sock:/var/run/docker.sock',
                     ],
                 ],
             ], $services),
@@ -262,7 +218,7 @@ class DeployLocal extends Command
     {
         return [
             ['run', null, InputOption::VALUE_NONE, 'Run created services in Docker'],
-            ['path', 'o', InputOption::VALUE_OPTIONAL, 'Relative path to the root where to write resulted docker-compose.yml file', 'resources/sidecar'],
+            ['path', 'o', InputOption::VALUE_OPTIONAL, 'Relative path to the root where to write resulted docker-compose.yml file', config('sidecar-local.path', 'resources/sidecar')],
             ['stop', null, InputOption::VALUE_NONE, 'Stop all Docker services previously created using this command on the path'],
         ];
     }

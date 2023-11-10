@@ -10,6 +10,11 @@ class DeployLocalTest extends TestCase
 {
     use InteractsWithPublishedFiles;
 
+    /**
+     * @var string[]
+     */
+    protected $files = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -19,48 +24,67 @@ class DeployLocalTest extends TestCase
 
     public function testDeployLocalGeneratesDockerComposeYamlFile()
     {
+        $this->files[] = resource_path('sidecar/docker-compose.yml');
+
         $command = $this->artisan('sidecar:local');
 
         $command->expectsOutput('Docker compose file created successfully with all functions as services.');
-        
+
         $command->assertExitCode(0);
 
         $command->run();
 
         $this->assertFileContains([
-            "traefik:",
-            "container_name: sidecar_local",
+            'traefik:',
+            'container_name: sidecar_local',
             "image: 'traefik:v2.4'",
-            "deploy:",
-            "restart_policy:",
-            "condition: unless-stopped",
-            "ports:",
+            'deploy:',
+            'restart_policy:',
+            'condition: unless-stopped',
+            'ports:',
             "- '6000:80'",
             "- '8080:8080'",
-            "command:",
+            'command:',
             "- '--api.insecure=true'",
             "- '--providers.docker=true'",
             "- '--providers.docker.exposedbydefault=false'",
             "- '--entryPoints.web.address=:80'",
-            "volumes:",
+            'volumes:',
             "- '/var/run/docker.sock:/var/run/docker.sock'",
-            "test_function:",
-            "container_name: TestFunction",
-            "image: 'amazon/aws-lambda-nodejs:16'",
-            "deploy:",
-            "restart_policy:",
-            "condition: on-failure",
-            "max_attempts: 3",
-            "command: index.handler",
-            "volumes:",
+            'test_function:',
+            'container_name: TestFunction',
+            "image: 'public.ecr.aws/lambda/nodejs:16-x86_64'",
+            'deploy:',
+            'restart_policy:',
+            'condition: on-failure',
+            'max_attempts: 3',
+            'command: index.handler',
+            'volumes:',
             "- './TestFunction:/var/task'",
-            "labels:",
-            "- traefik.enable=true",
-            "- traefik.http.routers.test_function.entrypoints=web",
+            'labels:',
+            '- traefik.enable=true',
+            '- traefik.http.routers.test_function.entrypoints=web',
             "- 'traefik.http.routers.test_function.rule=Host(`localhost`) && Path(`/2015-03-31/functions/local-opensoutheners-sidecarlocal-tests-fixtures-testfunction:active/invocations`)'",
-            "- traefik.http.middlewares.test_function-replacepath.replacepath.path=/2015-03-31/functions/function/invocations",
-            "- traefik.http.routers.test_function.middlewares=test_function-replacepath",
-            "- traefik.http.services.test_function.loadbalancer.server.port=8080",
+            '- traefik.http.middlewares.test_function-replacepath.replacepath.path=/2015-03-31/functions/function/invocations',
+            '- traefik.http.routers.test_function.middlewares=test_function-replacepath',
+            '- traefik.http.services.test_function.loadbalancer.server.port=8080',
+            'test_arm_function:',
+            'container_name: TestArmFunction',
+            "image: 'public.ecr.aws/lambda/nodejs:16-arm64'",
+            'deploy:',
+            'restart_policy:',
+            'condition: on-failure',
+            'max_attempts: 3',
+            'command: index.handler',
+            'volumes:',
+            "- './TestArmFunction:/var/task'",
+            'labels:',
+            '- traefik.enable=true',
+            '- traefik.http.routers.test_arm_function.entrypoints=web',
+            "- 'traefik.http.routers.test_arm_function.rule=Host(`localhost`) && Path(`/2015-03-31/functions/local-opensoutheners-sidecarlocal-tests-fixtures-testarmfunction:active/invocations`)'",
+            '- traefik.http.middlewares.test_arm_function-replacepath.replacepath.path=/2015-03-31/functions/function/invocations',
+            '- traefik.http.routers.test_arm_function.middlewares=test_arm_function-replacepath',
+            '- traefik.http.services.test_arm_function.loadbalancer.server.port=8080',
         ], 'resources/sidecar/docker-compose.yml');
     }
 
@@ -71,7 +95,7 @@ class DeployLocalTest extends TestCase
         $command = $this->artisan('sidecar:local', ['--run' => true]);
 
         $command->expectsOutput('Docker compose file created successfully with all functions as services.');
-        
+
         $command->expectsOutput('Docker functions services running in the background.');
 
         $command->assertExitCode(0);
