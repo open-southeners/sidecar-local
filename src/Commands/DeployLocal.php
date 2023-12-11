@@ -80,10 +80,6 @@ class DeployLocal extends Command
         $sidecarFunctions = Sidecar::instantiatedFunctions();
         $services = [];
 
-        // We need to set environment any value rather than "local"
-        // to be able to grab layers from AWS cloud.
-        config(['sidecar.env' => 'deploying']);
-
         foreach ($sidecarFunctions as $lambdaFunction) {
             $lambdaFunction->beforeDeployment();
 
@@ -130,6 +126,8 @@ class DeployLocal extends Command
             }
         }
 
+        config(['sidecar.env' => 'deploying']);
+
         return $services;
     }
 
@@ -140,7 +138,15 @@ class DeployLocal extends Command
     {
         $progressBar = $this->getOutput()->createProgressBar(count($arns));
 
-        return app(SidecarLayers::class)->fetch($function, $arns, $progressBar);
+        // We need to set environment any value rather than "local"
+        // to be able to grab layers from AWS cloud.
+        config(['sidecar.env' => 'deploying']);
+
+        $lambdaLayersVolume = app(SidecarLayers::class)->fetch($function, $arns, $progressBar);
+
+        config(['sidecar.env' => 'local']);
+
+        return $lambdaLayersVolume;
     }
 
     /**
