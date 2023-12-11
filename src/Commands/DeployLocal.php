@@ -50,7 +50,7 @@ class DeployLocal extends Command
             return 2;
         }
 
-        $fullPath = base_path($this->option('path'));
+        $fullPath = base_path((string) $this->option('path'));
 
         if ($this->option('stop')) {
             return $this->stopDocker($fullPath);
@@ -193,7 +193,7 @@ class DeployLocal extends Command
         if ($result->failed()) {
             $this->error($result->errorOutput());
 
-            return $result->exitCode();
+            return $result->exitCode() ?? 0;
         }
 
         $this->info('Docker functions services running in the background.');
@@ -211,7 +211,7 @@ class DeployLocal extends Command
         if ($result->failed()) {
             $this->error($result->errorOutput());
 
-            return $result->exitCode();
+            return $result->exitCode() ?? 0;
         }
 
         $this->info('Docker functions services stopped successfully.');

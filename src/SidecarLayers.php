@@ -31,6 +31,7 @@ class SidecarLayers
 
         $zipArchive = new ZipArchive();
 
+        /** @var string $basePath */
         $basePath = config('sidecar-local.path') ?? $function->package()->getBasePath();
         $functionLayerDirectory = "{$basePath}/../layers/{$function->name()}";
 
@@ -45,7 +46,7 @@ class SidecarLayers
 
             $layerLocation = data_get($layerData, 'Content.Location');
 
-            if (! $layerLocation || ! $this->filesystem->copy($layerLocation, $layerTmpFilePath)) {
+            if (! $layerLocation || ! is_string($layerLocation) || ! $this->filesystem->copy($layerLocation, $layerTmpFilePath)) {
                 throw new \Exception("Cannot download layer for function '{$function->name()}'.");
             }
 
