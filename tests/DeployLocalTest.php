@@ -121,4 +121,21 @@ class DeployLocalTest extends TestCase
 
         $process->assertRan('docker compose stop');
     }
+
+    public function testDeployLocalWhenSidecarEnvConfigIsNotEqualLocalShowsError()
+    {
+        config(['sidecar.env' => 'production']);
+
+        $process = Process::fake();
+
+        $command = $this->artisan('sidecar:local');
+
+        $command->doesntExpectOutput('Docker compose file created successfully with all functions as services.');
+
+        $command->expectsOutput('Make sure you have sidecar.env or app.env as "local".');
+
+        $command->assertExitCode(2);
+
+        $process->assertNothingRan();
+    }
 }

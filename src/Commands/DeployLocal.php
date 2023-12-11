@@ -38,12 +38,6 @@ class DeployLocal extends Command
      */
     public function handle(): int
     {
-        if (! class_exists('Hammerstone\Sidecar\Sidecar')) {
-            $this->error('You must first install hammerstone/sidecar composer package.');
-
-            return 1;
-        }
-
         if (config('sidecar.env') !== 'local') {
             $this->error('Make sure you have sidecar.env or app.env as "local".');
 
