@@ -80,6 +80,10 @@ class DeployLocal extends Command
         $sidecarFunctions = Sidecar::instantiatedFunctions();
         $services = [];
 
+        // We need to set environment any value rather than "local"
+        // to be able to grab layers from AWS cloud.
+        config(['sidecar.env' => 'deploying']);
+
         foreach ($sidecarFunctions as $lambdaFunction) {
             $lambdaFunction->beforeDeployment();
 

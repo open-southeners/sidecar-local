@@ -29,10 +29,6 @@ class SidecarLayers
             return false;
         }
 
-        // We need to set environment any value rather than "local"
-        // to be able to grab layers from AWS cloud.
-        config(['sidecar.env' => 'deploying']);
-
         $zipArchive = new ZipArchive();
 
         $basePath = config('sidecar-local.path') ?? $function->package()->getBasePath();
@@ -78,6 +74,8 @@ class SidecarLayers
         $layerDirectoryName = $layerDirectoryName->value();
 
         $layerTmpDirectoryPath = sys_get_temp_dir()."/SidecarLocal/layers/{$layerDirectoryName}";
+
+        $this->filesystem->ensureDirectoryExists($layerTmpDirectoryPath);
 
         return "{$layerTmpDirectoryPath}/{$layerZipFileName}";
     }
