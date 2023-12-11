@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2023-12-11
+
+### Fixed
+
+- Fetching Lambda layers locally with wrong URL (not faking environment on the process)
+
 ## [1.2.0] - 2023-11-03
 
 ### Added
