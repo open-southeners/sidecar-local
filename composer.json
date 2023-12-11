@@ -3,7 +3,14 @@
     "description": "An extension of Laravel Sidecar project to be able to use it locally with Docker",
     "license": "MIT",
     "keywords": [
-        "open-southeners"
+        "open-southeners",
+        "laravel",
+        "laravel-sidecar",
+        "aws-lambda-php",
+        "lambda-php",
+        "docker",
+        "local-development",
+        "testing"
     ],
     "authors": [
         {
