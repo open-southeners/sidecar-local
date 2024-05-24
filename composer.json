@@ -27,7 +27,7 @@
   ],
   "require": {
     "php": "^8.1",
-    "hammerstone/sidecar": "^0.5",
+    "hammerstone/sidecar": "~0.6",
     "illuminate/console": "^10.0 || ^11.0",
     "illuminate/filesystem": "^10.0 || ^11.0",
     "illuminate/support": "^10.0 || ^11.0",
@@ -56,9 +56,7 @@
   },
   "extra": {
     "laravel": {
-      "providers": [
-        "OpenSoutheners\\SidecarLocal\\ServiceProvider"
-      ]
+      "providers": ["OpenSoutheners\\SidecarLocal\\ServiceProvider"]
     }
   }
 }
