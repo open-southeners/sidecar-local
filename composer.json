@@ -1,62 +1,70 @@
 {
-  "name": "open-southeners/sidecar-local",
-  "description": "An extension of Laravel Sidecar project to be able to use it locally with Docker",
-  "license": "MIT",
-  "keywords": [
-    "open-southeners",
-    "laravel",
-    "laravel-sidecar",
-    "aws-lambda-php",
-    "lambda-php",
-    "docker",
-    "local-development",
-    "testing"
-  ],
-  "authors": [
-    {
-      "name": "Ruben Robles",
-      "email": "me@d8vjork.com",
-      "homepage": "https://d8vjork.com"
+    "name": "open-southeners/sidecar-local",
+    "description": "An extension of Laravel Sidecar project to be able to use it locally with Docker",
+    "license": "MIT",
+    "keywords": [
+        "open-southeners",
+        "laravel",
+        "laravel-sidecar",
+        "aws-lambda-php",
+        "lambda-php",
+        "docker",
+        "local-development",
+        "testing"
+    ],
+    "authors": [
+        {
+            "name": "Ruben Robles",
+            "email": "me@d8vjork.com",
+            "homepage": "https://d8vjork.com"
+        }
+    ],
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/open-southeners"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "hammerstone/sidecar": "dev-l12-compatibility",
+        "illuminate/console": "^11.0 || ^12.0",
+        "illuminate/filesystem": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0",
+        "symfony/yaml": "^6.3 || ^7.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/laravel-shift/sidecar.git"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "OpenSoutheners\\SidecarLocal\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OpenSoutheners\\SidecarLocal\\Tests\\": "tests"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "OpenSoutheners\\SidecarLocal\\ServiceProvider"
+            ]
+        }
     }
-  ],
-  "funding": [
-    {
-      "type": "github",
-      "url": "https://github.com/sponsors/open-southeners"
-    }
-  ],
-  "require": {
-    "php": "^8.1",
-    "hammerstone/sidecar": "~0.6",
-    "illuminate/console": "^10.0 || ^11.0",
-    "illuminate/filesystem": "^10.0 || ^11.0",
-    "illuminate/support": "^10.0 || ^11.0",
-    "symfony/yaml": "^6.3 || ^7.0"
-  },
-  "require-dev": {
-    "larastan/larastan": "^2.0",
-    "orchestra/testbench": "^8.0 || ^9.0",
-    "phpstan/phpstan": "^1.0",
-    "phpunit/phpunit": "^10.0"
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true,
-  "autoload": {
-    "psr-4": {
-      "OpenSoutheners\\SidecarLocal\\": "src"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "OpenSoutheners\\SidecarLocal\\Tests\\": "tests"
-    }
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "extra": {
-    "laravel": {
-      "providers": ["OpenSoutheners\\SidecarLocal\\ServiceProvider"]
-    }
-  }
 }
