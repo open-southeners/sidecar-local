@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-05-19
+
+### Added
+
+- Docker-in-Docker based local runtime for `sidecar:local`, with a managed `sidecar-docker` daemon and isolated Lambda runtime containers.
+- Laravel Sail support through the new `sidecar:local --sail` option.
+- Scoped Docker Compose project handling with orphan removal for stale Sidecar function containers.
+- Runtime image resolver for supported Node.js and Python AWS Lambda public ECR images.
+- Testbench Workbench app with Node.js and Python hello-world Lambda fixtures.
+- Docker integration tests covering local invocation and stale function cleanup.
+
+### Changed
+
+- `sidecar:local --run` now uses the DinD topology by default.
+- `sidecar:local --stop` now uses `docker compose down --remove-orphans` scoped to Sidecar-managed Compose projects.
+- Local Lambda client endpoint host is configurable with `SIDECAR_LOCAL_HOST`.
+- CI now runs Docker integration tests and targets the 2.0 compatibility matrix.
+
+### Removed
+
+- Laravel 11 support.
+- PHP 8.1 support.
+
 ## [1.5.0] - 2026-05-19
 
 ### Added
