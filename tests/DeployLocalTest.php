@@ -22,8 +22,59 @@ class DeployLocalTest extends TestCase
         app(Filesystem::class)->ensureDirectoryExists(resource_path('sidecar'));
     }
 
-    public function testDeployLocalGeneratesDockerComposeYamlFile()
+    public function testDeployLocalGeneratesDockerComposeYamlFiles()
     {
+        $this->files[] = resource_path('sidecar/docker-compose.yml');
+        $this->files[] = resource_path('sidecar/docker-compose.sidecar.yml');
+
+        $command = $this->artisan('sidecar:local');
+
+        $command->expectsOutput('Docker compose file created successfully with all functions as services.');
+
+        $command->assertExitCode(0);
+
+        $command->run();
+
+        $this->assertFileContains([
+            'sidecar-docker:',
+            'container_name: sidecar_docker',
+            "image: 'docker:27-dind'",
+            'privileged: true',
+            'environment:',
+            '- DOCKER_TLS_CERTDIR=',
+            'ports:',
+            "- '2375:2375'",
+            "- '6000:6000'",
+            "- '8080:8080'",
+            'volumes:',
+            "- '".base_path().':'.base_path()."'",
+            "- 'sidecar_docker_data:/var/lib/docker'",
+            'sidecar_docker_data: null',
+        ], 'resources/sidecar/docker-compose.yml');
+
+        $this->assertFileContains([
+            'traefik:',
+            'container_name: sidecar_local',
+            "image: 'traefik:v2.4'",
+            "- '6000:80'",
+            "- '8080:8080'",
+            'hello_node_function:',
+            'container_name: HelloNodeFunction',
+            "image: 'public.ecr.aws/lambda/nodejs:20-x86_64'",
+            'command: index.handler',
+            "- './HelloNodeFunction:/var/task'",
+            'hello_python_function:',
+            'container_name: HelloPythonFunction',
+            "image: 'public.ecr.aws/lambda/python:3.12-x86_64'",
+            'command: app.handler',
+            "- './HelloPythonFunction:/var/task'",
+        ], 'resources/sidecar/docker-compose.sidecar.yml');
+    }
+
+    public function testDeployLocalCanGenerateLegacyHostDockerComposeYamlFile()
+    {
+        config(['sidecar-local.docker.mode' => 'host']);
+
         $this->files[] = resource_path('sidecar/docker-compose.yml');
 
         $command = $this->artisan('sidecar:local');
@@ -38,57 +89,15 @@ class DeployLocalTest extends TestCase
             'traefik:',
             'container_name: sidecar_local',
             "image: 'traefik:v2.4'",
-            'deploy:',
-            'restart_policy:',
-            'condition: unless-stopped',
-            'ports:',
-            "- '6000:80'",
-            "- '8080:8080'",
-            'command:',
-            "- '--api.insecure=true'",
-            "- '--providers.docker=true'",
-            "- '--providers.docker.exposedbydefault=false'",
-            "- '--entryPoints.web.address=:80'",
             'volumes:',
             "- '/var/run/docker.sock:/var/run/docker.sock'",
-            'test_function:',
-            'container_name: TestFunction',
-            "image: 'public.ecr.aws/lambda/nodejs:16-x86_64'",
-            'deploy:',
-            'restart_policy:',
-            'condition: on-failure',
-            'max_attempts: 3',
-            'command: index.handler',
-            'volumes:',
-            "- './TestFunction:/var/task'",
-            'labels:',
-            '- traefik.enable=true',
-            '- traefik.http.routers.test_function.entrypoints=web',
-            "- 'traefik.http.routers.test_function.rule=Host(`localhost`) && Path(`/2015-03-31/functions/local-opensoutheners-sidecarlocal-tests-fixtures-testfunction:active/invocations`)'",
-            '- traefik.http.middlewares.test_function-replacepath.replacepath.path=/2015-03-31/functions/function/invocations',
-            '- traefik.http.routers.test_function.middlewares=test_function-replacepath',
-            '- traefik.http.services.test_function.loadbalancer.server.port=8080',
-            'test_arm_function:',
-            'container_name: TestArmFunction',
-            "image: 'public.ecr.aws/lambda/nodejs:16-arm64'",
-            'deploy:',
-            'restart_policy:',
-            'condition: on-failure',
-            'max_attempts: 3',
-            'command: index.handler',
-            'volumes:',
-            "- './TestArmFunction:/var/task'",
-            'labels:',
-            '- traefik.enable=true',
-            '- traefik.http.routers.test_arm_function.entrypoints=web',
-            "- 'traefik.http.routers.test_arm_function.rule=Host(`localhost`) && Path(`/2015-03-31/functions/local-opensoutheners-sidecarlocal-tests-fixtures-testarmfunction:active/invocations`)'",
-            '- traefik.http.middlewares.test_arm_function-replacepath.replacepath.path=/2015-03-31/functions/function/invocations',
-            '- traefik.http.routers.test_arm_function.middlewares=test_arm_function-replacepath',
-            '- traefik.http.services.test_arm_function.loadbalancer.server.port=8080',
+            'hello_node_function:',
+            'container_name: HelloNodeFunction',
+            "image: 'public.ecr.aws/lambda/nodejs:20-x86_64'",
         ], 'resources/sidecar/docker-compose.yml');
     }
 
-    public function testDeployLocalWithRunOptionTriggersASubProcess()
+    public function testDeployLocalWithRunOptionTriggersSubProcesses()
     {
         $process = Process::fake();
 
@@ -102,10 +111,12 @@ class DeployLocalTest extends TestCase
 
         $command->run();
 
-        $process->assertRan('docker compose up -d');
+        $process->assertRan('docker compose --project-name sidecar-local -f docker-compose.yml up -d --remove-orphans');
+        $process->assertRan('docker info');
+        $process->assertRan('docker compose --project-name sidecar-local-functions -f docker-compose.sidecar.yml up -d --remove-orphans');
     }
 
-    public function testDeployLocalWithStopOptionTriggersASubProcessWithoutCreatingDockerComposeFile()
+    public function testDeployLocalWithStopOptionTriggersSubProcessesWithoutCreatingDockerComposeFile()
     {
         $process = Process::fake();
 
@@ -119,7 +130,30 @@ class DeployLocalTest extends TestCase
 
         $command->run();
 
-        $process->assertRan('docker compose stop');
+        $process->assertRan('docker compose --project-name sidecar-local-functions -f docker-compose.sidecar.yml down --remove-orphans');
+        $process->assertRan('docker compose --project-name sidecar-local -f docker-compose.yml down --remove-orphans');
+    }
+
+    public function testDeployLocalWithSailOptionUsesSailNetwork()
+    {
+        $this->files[] = resource_path('sidecar/docker-compose.yml');
+        $this->files[] = resource_path('sidecar/docker-compose.sidecar.yml');
+
+        $command = $this->artisan('sidecar:local', ['--sail' => true]);
+
+        $command->expectsOutput('Docker compose file created successfully with all functions as services.');
+
+        $command->assertExitCode(0);
+
+        $command->run();
+
+        $this->assertFileContains([
+            'networks:',
+            'sail:',
+            'aliases:',
+            '- sidecar-docker',
+            'external: true',
+        ], 'resources/sidecar/docker-compose.yml');
     }
 
     public function testDeployLocalWhenSidecarEnvConfigIsNotEqualLocalShowsError()

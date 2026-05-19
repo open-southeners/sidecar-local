@@ -1,0 +1,1 @@
+# Workbench fixture keeps dependencies empty on purpose.

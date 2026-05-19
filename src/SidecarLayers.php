@@ -22,6 +22,8 @@ class SidecarLayers
 
     /**
      * Fetch function's required layers then return volume mapping otherwise false.
+     *
+     * @param  array<int, string>  $arns
      */
     public function fetch(LambdaFunction $function, array $arns, ProgressBar $progressBar): string|false
     {
@@ -42,7 +44,7 @@ class SidecarLayers
         foreach ($arns as $arn) {
             $layerTmpFilePath = $this->getLayerTmpPath($arn);
 
-            $layerData = $this->checkArchitecture($function, $this->fetchByArn($arn));
+            $layerData = $this->checkArchitecture($function, $this->checkRuntime($function, $this->fetchByArn($arn)));
 
             $layerLocation = data_get($layerData, 'Content.Location');
 
@@ -83,6 +85,8 @@ class SidecarLayers
 
     /**
      * Fetch layer by ARN string.
+     *
+     * @return array<array-key, mixed>
      */
     protected function fetchByArn(string $arn): array
     {
@@ -91,6 +95,9 @@ class SidecarLayers
 
     /**
      * Check function runtime is within layer compatible runtime list.
+     *
+     * @param  array<array-key, mixed>  $layer
+     * @return array<array-key, mixed>
      */
     protected function checkRuntime(LambdaFunction $function, array $layer): array
     {
@@ -98,13 +105,15 @@ class SidecarLayers
             return $layer;
         }
 
-        if (! in_array($function->runtime(), $layer['CompatibleRuntimes'])) {
+        $compatibleRuntimes = array_filter((array) $layer['CompatibleRuntimes'], 'is_string');
+
+        if (! in_array($function->runtime(), $compatibleRuntimes)) {
             throw new SidecarIncompatibleFunctionRuntime(
                 sprintf(
                     SidecarIncompatibleFunctionRuntime::MESSAGE,
                     $function->architecture(),
                     $function->name(),
-                    implode(', ', $layer['CompatibleRuntimes'])
+                    implode(', ', $compatibleRuntimes)
                 )
             );
         }
@@ -114,6 +123,9 @@ class SidecarLayers
 
     /**
      * Check function architecture is within supported layer architecture list.
+     *
+     * @param  array<array-key, mixed>  $layer
+     * @return array<array-key, mixed>
      */
     protected function checkArchitecture(LambdaFunction $function, array $layer): array
     {
@@ -121,13 +133,15 @@ class SidecarLayers
             return $layer;
         }
 
-        if (! in_array($function->architecture(), $layer['CompatibleArchitectures'])) {
+        $compatibleArchitectures = array_filter((array) $layer['CompatibleArchitectures'], 'is_string');
+
+        if (! in_array($function->architecture(), $compatibleArchitectures)) {
             throw new SidecarIncompatibleFunctionArchitecture(
                 sprintf(
                     SidecarIncompatibleFunctionArchitecture::MESSAGE,
                     $function->architecture(),
                     $function->name(),
-                    implode(', ', $layer['CompatibleArchitectures'])
+                    implode(', ', $compatibleArchitectures)
                 )
             );
         }

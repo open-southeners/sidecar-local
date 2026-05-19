@@ -1,0 +1,19 @@
+laravel: workbench
+
+providers:
+  - Hammerstone\Sidecar\Providers\SidecarServiceProvider
+  - OpenSoutheners\SidecarLocal\ServiceProvider
+
+migrations:
+  - workbench/database/migrations
+
+workbench:
+  install: false
+  health: false
+  discovers:
+    web: true
+    api: false
+    commands: true
+    components: false
+    factories: false
+    views: false

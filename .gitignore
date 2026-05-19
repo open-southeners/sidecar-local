@@ -6,3 +6,8 @@ phpunit.xml
 coverage
 clover.xml
 .phpunit.cache
+workbench/bootstrap/cache/*.php
+workbench/resources/sidecar/docker-compose*.yml
+workbench/resources/sidecar/**/__pycache__/
+
+workbench/vendor

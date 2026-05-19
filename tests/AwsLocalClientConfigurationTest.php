@@ -20,6 +20,15 @@ class AwsLocalClientConfigurationTest extends TestCase
         $this->assertEquals('http://localhost:6000', $lambdaEndpoint);
     }
 
+    public function testLambdaClientGetsConfiguredLocalEndpointHost()
+    {
+        config(['sidecar-local.host' => 'sidecar-docker']);
+
+        $lambdaEndpoint = app(LambdaClient::class)->getEndpoint();
+
+        $this->assertEquals('http://sidecar-docker:6000', $lambdaEndpoint);
+    }
+
     public function testLambdaClientGetsOtherEndpointWhenNonLocalEnv()
     {
         config(['sidecar.env' => 'production']);

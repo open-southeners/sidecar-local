@@ -1,0 +1,6 @@
+{
+    "name": "sidecar-local-hello-node-function",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Workbench Lambda fixture for local Sidecar testing"
+}

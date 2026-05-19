@@ -12,11 +12,8 @@ jobs:
         os: [ubuntu-latest]
         php: [8.2, 8.3, 8.4, 8.5]
         stability: [prefer-stable]
-        laravel: [11.*, 12.*, 13.*]
+        laravel: [12.*, 13.*]
         include:
-          - laravel: 11.*
-            testbench: 9.*
-
           - laravel: 12.*
             testbench: 10.*
 
@@ -55,7 +52,7 @@ jobs:
           composer update --prefer-dist --no-interaction --no-progress --${{ matrix.stability }}
 
       - name: 🧪 Execute tests
-        run: vendor/bin/phpunit -c phpunit.coverage.dist.xml
+        run: vendor/bin/phpunit -c phpunit.coverage.dist.xml --exclude-group docker
 
       - name: 🚀 Upload coverage reports to Codecov
         uses: codecov/codecov-action@v6
@@ -64,3 +61,58 @@ jobs:
           files: ./clover.xml
           fail_ci_if_error: true
           # verbose: true
+
+  docker-integration:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        php: [8.2, 8.3, 8.4, 8.5]
+        stability: [prefer-stable]
+        laravel: [12.*, 13.*]
+        include:
+          - laravel: 12.*
+            testbench: 10.*
+
+          - laravel: 13.*
+            testbench: 11.*
+        exclude:
+          - php: 8.2
+            laravel: 13.*
+
+    name: Docker P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
+
+    steps:
+      - name: 🏗 Checkout code
+        uses: actions/checkout@v6
+
+      - name: 🏗 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
+      - name: 🏗 Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: 🏗 Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: docker-dependencies-composer-laravel-${{ matrix.laravel }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: docker-dependencies-composer-laravel-${{ matrix.laravel }}-
+
+      - name: 📦 Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-dist --no-interaction --no-progress --${{ matrix.stability }}
+
+      - name: 🐳 Verify Docker availability
+        run: |
+          docker version
+          docker compose version
+
+      - name: 🧪 Execute Docker integration tests
+        run: vendor/bin/phpunit -c phpunit.dist.xml --group docker --do-not-fail-on-empty-test-suite
