@@ -27,7 +27,7 @@
     ],
     "require": {
         "php": "^8.2",
-        "hammerstone/sidecar": "dev-l13-compatibility",
+        "hammerstone/sidecar": "^0.8",
         "illuminate/console": "^12.0 || ^13.0",
         "illuminate/filesystem": "^12.0 || ^13.0",
         "illuminate/support": "^12.0 || ^13.0",
@@ -39,12 +39,6 @@
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/laravel-shift/sidecar.git"
-        }
-    ],
     "minimum-stability": "stable",
     "prefer-stable": true,
     "autoload": {
